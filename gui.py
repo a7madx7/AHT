@@ -46,9 +46,9 @@ class Tools():
         root.title('Adam Helper Tools')
         self.center(root)
 
-        lbl = Label(root, text='Choose Your Tool', bg = colors.windows_bg, fg = colors.fg)
-        lbl.config(font=('helvetica', 20))
-        main_canvas.create_window(150, 60, window=lbl)
+        lbl_header = Label(root, text='Choose Your Tool', bg = colors.windows_bg, fg = colors.fg)
+        lbl_header.config(font=('helvetica', 20))
+        main_canvas.create_window(150, 60, window=lbl_header)
 
         browseButton_ContactsExcel = Button(root, text="      Import Contacts File     ", command=self.getContactsExcelFile, bg=colors.component_bg, fg=colors.fg, font=('helvetica', 14, 'bold'))
         main_canvas.create_window(150, 150, window=browseButton_ContactsExcel)
@@ -57,22 +57,24 @@ class Tools():
         main_canvas.create_window(150, 220, window=browseButton_OrderExcel)
 
         
-        lbl = Label(root, text=cpy, bg = colors.windows_bg, fg=colors.fg)
-        lbl.config(font=('helvetica', 12))
-        main_canvas.create_window(150, 280, window=lbl)
+        lbl_footer = Label(root, text=cpy, bg = colors.windows_bg, fg=colors.fg)
+        lbl_footer.config(font=('helvetica', 12))
+        main_canvas.create_window(150, 280, window=lbl_footer)
 
         root.mainloop()
 
     def getContactsExcelFile(self):
         global read_file
     
-        import_file_path = filedialog.askopenfilename()
-        read_file = pd.read_excel(import_file_path, dtype={'MOBILE NO.':str})
+        import_file_paths = filedialog.askopenfilenames()
 
-        if convertToCSV(read_file, import_file_path):
-            self.done("Contacts converted successfully !!")
-        else:
-            self.error("")
+        for import_file_path in import_file_paths:
+            read_file = pd.read_excel(import_file_path, dtype={'MOBILE NO.':str})
+
+            if not convertToCSV(read_file, import_file_path):
+                self.error("Contacts file is corrupt, Please contact ABC System Support for a valid file.")
+           
+        self.done("Done !!")    
 
     def getOrderExcelFile(self):
             global read_file
@@ -92,11 +94,11 @@ class Tools():
                     self.error(e)
                     print(e)
 
-                if evaluateOrder(import_file_path, read_file, pharmacy_name):
-                    self.done("Order Evaluation Done !!")
-                else:
-                    err = f'"The excel file for {pharmacy_name} is corrupt, please contact ABC System Support!"'
+                if not evaluateOrder(import_file_path, read_file, pharmacy_name):
+                    err = f'"The excel file for {pharmacy_name} is corrupt, please contact ABC System Support for a valid file!"'
                     self.error(err)
+                   
+            self.done("Order Evaluation Done !!")    
 
     def done(self, message):
         messagebox.showinfo("ADAM CO.", message)
