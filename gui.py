@@ -77,13 +77,26 @@ class Tools():
     def getOrderExcelFile(self):
             global read_file
             
-            import_file_path = filedialog.askopenfilename()
-            read_file = pd.read_excel(import_file_path, header=17, skipfooter=1)
+            import_file_paths = filedialog.askopenfilenames(parent=root, title='Choose the order excel file')
 
-            if evaluateOrder(import_file_path, read_file):
-                self.done("Order Evaluation Done !!")
-            else:
-                self.error("The excel file is corrupt, please contact ABC System Support!")
+
+            for import_file_path in import_file_paths:
+                read_file = pd.read_excel(import_file_path, header=17, skipfooter=1)
+                
+                temp = pd.read_excel(import_file_path)
+
+                pharmacy_name = ''
+                try:
+                    pharmacy_name = str(temp.iat[8, 1]).split('FROM : ')[1]
+                except Exception as e:
+                    self.error(e)
+                    print(e)
+
+                if evaluateOrder(import_file_path, read_file, pharmacy_name):
+                    self.done("Order Evaluation Done !!")
+                else:
+                    err = f'"The excel file for {pharmacy_name} is corrupt, please contact ABC System Support!"'
+                    self.error(err)
 
     def done(self, message):
         messagebox.showinfo("ADAM CO.", message)

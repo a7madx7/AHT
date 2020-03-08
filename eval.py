@@ -20,9 +20,9 @@ import os
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # LOGIC REGION.
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-def evaluateOrder(file, df):
+def evaluateOrder(file, df, pharmacy_name):
     try:
-        export_file_path = get_export_file_path(file)
+        export_file_path = get_export_file_path(file, pharmacy_name)
 
         # drop unnecessary columns
         drop_unnecessary_columns(df)
@@ -35,8 +35,8 @@ def evaluateOrder(file, df):
         seed_new_columns(df)
 
         # print(df.head())
-       
-        df.style.apply(highlight, axis=None).to_excel(export_file_path, sheet_name='REVISED', na_rep='', float_format=None, columns=None, header=True, index=None, index_label=None, startrow=0, startcol=0, engine=None, merge_cells=True, encoding=None, inf_rep='inf', verbose=True, freeze_panes=None) 
+
+        df.style.apply(highlight, axis=None).to_excel(export_file_path, sheet_name=get_file_id(pharmacy_name), na_rep='', float_format=None, columns=None, header=True, index=None, index_label=None, startrow=0, startcol=0, engine=None, merge_cells=True, encoding=None, inf_rep='inf', verbose=True, freeze_panes=None) 
         
         format_file(export_file_path)
         return True
@@ -47,14 +47,16 @@ def evaluateOrder(file, df):
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # IO REGION.
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-def get_export_file_path(file):
-    try:
-        # renew the now variable in case of leaving the app open for days.
-        now = datetime.datetime.now()
 
-        file_name = now.strftime("%A") + ' ' + str(now.day) + '-' + str(now.month)
+def get_file_id(pharmacy_name):
+    # renew the now variable in case of leaving the app open for days.
+    now = datetime.datetime.now()
+    return f'{pharmacy_name} {now.strftime("%A")} {str(now.day)}-{str(now.month)}'
+
+def get_export_file_path(file, pharmacy_name):
+    try:  
         _dir = Path(os.path.dirname(file)) ## directory of file
-        export_file_path = _dir / str("REVISED ORDER " + file_name + '.xlsx')
+        export_file_path = _dir / str("REVISED ORDER " + get_file_id(pharmacy_name) + '.xlsx')
         return export_file_path
     except Exception as e:
         print(e)
