@@ -18,9 +18,9 @@
 !define VERSIONBUILD 4
 # These will be displayed by the "Click here for support information" link in "Add/Remove Programs"
 # It is possible to use "mailto:" links in here to open the email client
-!define HELPURL "http://facebook.com/A7madX7" # "Support Information" link
-!define UPDATEURL "http://facebook.com/A7madX7" # "Product Updates" link
-!define ABOUTURL "http://facebook.com/A7madX7" # "Publisher" link
+!define HELPURL "https://facebook.com/A7madX7" # "Support Information" link
+!define UPDATEURL "https://facebook.com/A7madX7" # "Product Updates" link
+!define ABOUTURL "https://facebook.com/A7madX7" # "Publisher" link
 # This is the size (in kB) of all the files copied into "Program Files"
 !define INSTALLSIZE 42140
  
