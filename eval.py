@@ -51,7 +51,12 @@ def evaluateOrder(file, df, pharmacy_name):
 def get_file_id(pharmacy_name):
     # renew the now variable in case of leaving the app open for days.
     now = datetime.datetime.now()
-    return f'{pharmacy_name} {now.strftime("%A")} {str(now.day)}-{str(now.month)}'
+    try:
+        # return the file name with the pharmacy name inside.
+        return f'{pharmacy_name} {now.strftime("%A")} {str(now.day)}-{str(now.month)}=={now.hour}-{now.minute}-{now.second}'
+    except:
+        # if there's any problem doing the above, return the file name without the pharmacy name.
+        return f'Revised on {now.strftime("%A")} {str(now.day)}-{str(now.month)}=={now.hour}-{now.minute}-{now.second}'
 
 def get_export_file_path(file, pharmacy_name):
     try:  
@@ -97,7 +102,7 @@ def format_file(file):
         ws.column_dimensions['J'].width = 15
         ws.column_dimensions['K'].width = 20
 
-        ws.sheet_properties.tabColor = "FFFF72"
+        ws.sheet_properties.tabColor = "F17CF7"
         wb.save(filename = file)
         return True
     except Exception as e:
@@ -124,10 +129,12 @@ def seed_new_columns(df):
 
 def highlight(x):
     # set the highlight style for each condition.
-    c1 = 'background-color: pink; font-size: 16pt; text-align: center'
-    c2 = 'background-color: #90ee90; font-size: 16pt; text-align: center;'
-    c3 = 'background-color: yellow; font-size: 16pt; text-align: center;'
-    c4 = 'background-color: red; font-size: 16pt; text-align: center;'
+    approved_max_style = 'background-color: pink; font-size: 16pt; text-align: center'
+    approved_style = 'background-color: #90ee90; font-size: 16pt; text-align: center;'
+    rejected_min_style = 'background-color: #F7F57C; font-size: 16pt; text-align: center;'
+    rejected_max_style = 'background-color: #F7857C; font-size: 16pt; text-align: center;'
+    approved_addition_style = 'background-color: #7CBCF7; font-size: 16pt; text-align: center;'
+
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     # get a clone of the original data frame.
     df1 = pd.DataFrame('', index=x.index, columns=x.columns)
@@ -138,12 +145,14 @@ def highlight(x):
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     approved = x['QTY'] <= x['AUTO ORDER'].apply(lambda x: math.ceil(x * 1.5))
     approved_max = x['QTY'] == x['AUTO ORDER'].apply(lambda x: math.ceil(x * 1.5))
+    approved_addition = x['AUTO ORDER'].apply(lambda x: x == 0) & x['QTY'].apply(lambda x: x <= 2 & x > 0)
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     # color code the data rows.
-    df1 = df1.mask(rejected_max, c4)
-    df1 = df1.mask(approved, c2)
-    df1 = df1.mask(rejected_min, c3) 
-    df1 = df1.mask(approved_max, c1)
+    df1 = df1.mask(rejected_max, rejected_max_style)
+    df1 = df1.mask(approved, approved_style)
+    df1 = df1.mask(rejected_min, rejected_min_style) 
+    df1 = df1.mask(approved_max, approved_max_style)
+    df1 = df1.mask(approved_addition, approved_addition_style)
 
     return df1
 
