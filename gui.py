@@ -11,11 +11,12 @@ import datetime
 from eval import *
 from contacts import *
 
-from tkinter import Tk, filedialog, messagebox, Label, Button, Canvas
+from tkinter import Tk, filedialog, messagebox, Label, Button, Canvas, StringVar, OptionMenu
+from tkinter import ttk
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # GLOBAL VARIABLES REGION.
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 now = datetime.datetime.now()
 cpy = f"© Dr. Ahmad Hamdi Emara {now.year}"
 
@@ -30,6 +31,27 @@ class Color:
 
 colors = Color()
 
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# CUSTOM WIDGET REGION
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+@dataclass
+class AdamOption:
+    gender: str = 'Neutral'
+  
+adamOptions = AdamOption()
+
+class AdamMenu(OptionMenu):
+    def __init__(self, master, status, *options):
+        self.gender = StringVar(master)
+        self.gender.set(status)
+        def genderChanged(*args):
+            adamOptions.gender = self.value()
+        self.gender.trace("w", genderChanged)
+        OptionMenu.__init__(self, master, self.gender, *options)
+        self.config(font=('helvetica', 14, 'bold'),bg=colors.component_bg, fg=colors.fg,width=19)
+        self['menu'].config(font=('helvetica', 18, 'bold'),bg=colors.component_bg, fg=colors.fg)
+    def value(self):
+        return self.gender.get()
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # START OF UI SCRIPT.
@@ -48,22 +70,31 @@ class Tools():
 
         lbl_header = Label(root, text='Choose Your Tool', bg = colors.windows_bg, fg = colors.fg)
         lbl_header.config(font=('helvetica', 20))
-        main_canvas.create_window(150, 60, window=lbl_header)
+        main_canvas.create_window(150, 40, window=lbl_header)
 
-        browseButton_ContactsExcel = Button(root, text="      Import Contacts File     ", command=self.getContactsExcelFile, bg=colors.component_bg, fg=colors.fg, font=('helvetica', 14, 'bold'))
-        main_canvas.create_window(150, 150, window=browseButton_ContactsExcel)
+        ttk.Separator(root).place(x=0, y=80, relwidth=1)
 
-        browseButton_OrderExcel = Button(root, text="         Import Order File        ", command=self.getOrderExcelFile, bg=colors.component_bg, fg=colors.fg, font=('helvetica', 14, 'bold'))
-        main_canvas.create_window(150, 220, window=browseButton_OrderExcel)
+        genderMenu = AdamMenu(root, 'Neutral', "Neutral", "Female", "Male")
+        main_canvas.create_window(150, 120, window = genderMenu)
+        
+        browseButton_ContactsExcel = Button(root, text="     Import Contacts File    ", command=self.getContactsExcelFile, bg=colors.component_bg, fg=colors.fg, font=('helvetica', 14, 'bold'))
+        main_canvas.create_window(150, 180, window=browseButton_ContactsExcel)
+
+        ttk.Separator(root).place(x=0, y=215, relwidth=1)
+
+        browseButton_OrderExcel = Button(root, text="        Import Order File       ", command=self.getOrderExcelFile, bg=colors.component_bg, fg=colors.fg, font=('helvetica', 14, 'bold'))
+        main_canvas.create_window(150, 240, window=browseButton_OrderExcel)
+        ttk.Separator(root).place(x=0, y=270, relwidth=1)
 
         
         lbl_footer = Label(root, text=cpy, bg = colors.windows_bg, fg=colors.fg)
         lbl_footer.config(font=('helvetica', 12))
-        main_canvas.create_window(150, 280, window=lbl_footer)
+        main_canvas.create_window(150, 290, window=lbl_footer)
 
         root.mainloop()
 
     def getContactsExcelFile(self):
+
         global read_file
     
         import_file_paths = filedialog.askopenfilenames()
@@ -71,11 +102,12 @@ class Tools():
         for import_file_path in import_file_paths:
             read_file = pd.read_excel(import_file_path, dtype={'MOBILE NO.':str})
 
-            if not convertToCSV(read_file, import_file_path):
+            if not convertToCSV(read_file, import_file_path, adamOptions.gender):
                 self.error("Contacts file is corrupt, Please contact ABC System Support for a valid file.")
+            else:
+                self.done("Done !!")
            
-        self.done("Done !!")    
-
+            
     def getOrderExcelFile(self):
             global read_file
             
@@ -96,9 +128,9 @@ class Tools():
 
                 if not evaluateOrder(import_file_path, read_file, pharmacy_name):
                     err = f'"The excel file for {pharmacy_name} is corrupt, please contact ABC System Support for a valid file!"'
-                    self.error(err)
-                   
-            self.done("Order Evaluation Done !!")    
+                    self.error(err)    
+                else:
+                    self.done("Order Evaluation Done !!")    
 
     def done(self, message):
         messagebox.showinfo("ADAM CO.", message)

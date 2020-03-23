@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 
 import math
+from random import randrange
 import datetime
 
 from pathlib import Path
@@ -22,23 +23,23 @@ import os
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 def evaluateOrder(file, df, pharmacy_name):
     try:
-        export_file_path = get_export_file_path(file, pharmacy_name)
+        export_file_path = getExportFilePath(file, pharmacy_name)
 
         # drop unnecessary columns
-        drop_unnecessary_columns(df)
+        dropUnnecessaryColumns(df)
 
-        remove_new_lines(df)
-        remove_unnecessary_strings(df)
+        removeNewLines(df)
+        removeUnnecessaryStrings(df)
 
         # insert the MIN, MAX, RECOMMENDED COLUMNS
-        insert_new_columns(df)
-        seed_new_columns(df)
+        insertNewColumns(df)
+        seedNewColumns(df)
 
         # print(df.head())
 
-        df.style.apply(highlight, axis=None).to_excel(export_file_path, sheet_name=get_file_id(pharmacy_name), na_rep='', float_format=None, columns=None, header=True, index=None, index_label=None, startrow=0, startcol=0, engine=None, merge_cells=True, encoding=None, inf_rep='inf', verbose=True, freeze_panes=None) 
+        df.style.apply(highlight, axis=None).to_excel(export_file_path, sheet_name=getFileId(pharmacy_name), na_rep='', float_format=None, columns=None, header=True, index=None, index_label=None, startrow=0, startcol=0, engine=None, merge_cells=True, encoding=None, inf_rep='inf', verbose=True, freeze_panes=None) 
         
-        format_file(export_file_path)
+        formatFile(export_file_path)
         return True
     except Exception as e:
         print(e)
@@ -48,20 +49,20 @@ def evaluateOrder(file, df, pharmacy_name):
 # IO REGION.
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-def get_file_id(pharmacy_name):
+def getFileId(pharmacy_name):
     # renew the now variable in case of leaving the app open for days.
     now = datetime.datetime.now()
     try:
         # return the file name with the pharmacy name inside.
-        return f'{pharmacy_name} {now.strftime("%A")} {str(now.day)}-{str(now.month)}=={now.hour}-{now.minute}-{now.second}'
+        return f'{pharmacy_name} {now.strftime("%A")} {str(now.day)}-{str(now.month)}=={randrange(1000)}'
     except:
         # if there's any problem doing the above, return the file name without the pharmacy name.
-        return f'Revised on {now.strftime("%A")} {str(now.day)}-{str(now.month)}=={now.hour}-{now.minute}-{now.second}'
+        return f'Revised on {now.strftime("%A")} {str(now.day)}-{str(now.month)}=={randrange(1000)}'
 
-def get_export_file_path(file, pharmacy_name):
+def getExportFilePath(file, pharmacy_name):
     try:  
         _dir = Path(os.path.dirname(file)) ## directory of file
-        export_file_path = _dir / str("REVISED ORDER " + get_file_id(pharmacy_name) + '.xlsx')
+        export_file_path = _dir / str("REVISED ORDER " + getFileId(pharmacy_name) + '.xlsx')
         return export_file_path
     except Exception as e:
         print(e)
@@ -69,27 +70,27 @@ def get_export_file_path(file, pharmacy_name):
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # TRIMMING REGION.
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-def drop_unnecessary_columns(df):
+def dropUnnecessaryColumns(df):
     # drop unnecessary columns from the data frame.
     for i in range(1,21):
         index = f'None.{i}'
         del df[index]
     df.dropna(how='all', axis=1, inplace = True)
 
-def remove_new_lines(df):
+def removeNewLines(df):
     for column in df:
         if column is not None:
             df.rename(columns={column: column.replace('\n',' ')}, inplace=True)
             column = column.replace('\n',' ')
 
-def remove_unnecessary_strings(df):
+def removeUnnecessaryStrings(df):
     # Remove the unnecessary ## LOC.:DEFAULT
     df['PRODUCT'] = df['PRODUCT'].apply(lambda x: x.split('\n')[0])
 
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # ALTERING/MODIFYING REGION.
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-def format_file(file):
+def formatFile(file):
     try:
         wb = load_workbook(file)
         ws = wb.worksheets[0]
@@ -109,7 +110,7 @@ def format_file(file):
         print(e)
         return False
 
-def insert_new_columns(df):
+def insertNewColumns(df):
     # insert the min column
     df.insert(2, 'MIN', 0)
     # insert the max column
@@ -117,7 +118,7 @@ def insert_new_columns(df):
     # insert the recommended column
     df.insert(2, 'RECOMMENDED', 0)
 
-def seed_new_columns(df):
+def seedNewColumns(df):
     # Initial seeding for those columns.
     df['MIN'] = df['AUTO ORDER'].apply(lambda x: math.ceil(0.5 * x))
     df['MAX'] = df['AUTO ORDER'].apply(lambda x: math.ceil(1.5 * x))
@@ -145,7 +146,7 @@ def highlight(x):
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     approved = x['QTY'] <= x['AUTO ORDER'].apply(lambda x: math.ceil(x * 1.5))
     approved_max = x['QTY'] == x['AUTO ORDER'].apply(lambda x: math.ceil(x * 1.5))
-    approved_addition = x['AUTO ORDER'].apply(lambda x: x == 0) & x['QTY'].apply(lambda x: x <= 2 & x > 0)
+    approved_addition = (x['AUTO ORDER'].apply(lambda x: x == 0) & x['QTY'].apply(lambda x: (x <= 2 and x > 0)) & x['BRANCH STOCK'].apply(lambda x: x <= 1))
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     # color code the data rows.
     df1 = df1.mask(rejected_max, rejected_max_style)
