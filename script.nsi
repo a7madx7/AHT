@@ -14,13 +14,13 @@
 !define DESCRIPTION "Adam helper tools is a program composed of a set of tools in one app, to help the pharmacists of Adam medical company achieve their routines."
 # These three must be integers
 !define VERSIONMAJOR 1
-!define VERSIONMINOR 2
-!define VERSIONBUILD 4
+!define VERSIONMINOR 7
+!define VERSIONBUILD 0
 # These will be displayed by the "Click here for support information" link in "Add/Remove Programs"
 # It is possible to use "mailto:" links in here to open the email client
-!define HELPURL "https://facebook.com/A7madX7" # "Support Information" link
-!define UPDATEURL "https://facebook.com/A7madX7" # "Product Updates" link
-!define ABOUTURL "https://facebook.com/A7madX7" # "Publisher" link
+!define HELPURL "http://facebook.com/A7madX7" # "Support Information" link
+!define UPDATEURL "http://facebook.com/A7madX7" # "Product Updates" link
+!define ABOUTURL "http://facebook.com/A7madX7" # "Publisher" link
 # This is the size (in kB) of all the files copied into "Program Files"
 !define INSTALLSIZE 42140
  
@@ -53,8 +53,7 @@ outFile "AHT-Installer.exe"
 ;Pages
 
   ;For the installer
-  !insertmacro MUI_PAGE_LICENSE "C:\Users\adam 25\Documents\Adam Tools\output\license.rtf" # link to an ANSI encoded license file
-  !insertmacro MUI_PAGE_COMPONENTS # remove if you don't want to list components
+  !insertmacro MUI_PAGE_LICENSE "C:\Users\adam 25\Documents\Developer\Adam Tools\output\license.rtf" # link to an ANSI encoded license file
   !insertmacro MUI_PAGE_INSTFILES
 
   ;For the uninstaller
