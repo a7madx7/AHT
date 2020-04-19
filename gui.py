@@ -14,12 +14,14 @@ from contacts import *
 from tkinter import Tk, filedialog, messagebox, Label, Button, Canvas, StringVar, OptionMenu
 from tkinter import ttk
 
+from multiprocessing import Pool
+import time
+
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # GLOBAL VARIABLES REGION.
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 now = datetime.datetime.now()
 cpy = f"© Dr. Ahmad Hamdi Emara {now.year}"
-
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # THEME REGION.
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -91,46 +93,84 @@ class Tools():
         lbl_footer.config(font=('helvetica', 12))
         main_canvas.create_window(150, 290, window=lbl_footer)
 
+        root.iconbitmap('logo.ico')
         root.mainloop()
 
     def getContactsExcelFile(self):
-
         global read_file
     
         import_file_paths = filedialog.askopenfilenames()
+        toc = time.time()
+        pool = Pool(processes = len(import_file_paths))
+        if len(import_file_paths) > 1:
+            if self.ask("Do you want to concatenate all of the results into a single file?"):
+                # merge branches data into a single file.
+                dfs = pool.map(self.executeContactConversionWithMerge, import_file_paths)
+                pool.close()
+                pool.join()
+                export_file_path = getContactsExportFilePath(import_file_paths[0], True)
+                executeMergeToCSV(export_file_path, dfs, adamOptions.gender)
+            else:
+                # multiple separate conversions.
+                pool.map(self.executeContactConversion, import_file_paths)
+                pool.close()
+                pool.join()
+        else: 
+            # here we do single conversions.
+            self.executeContactConversion(import_file_paths[0])
+        
+        tic = time.time()
+        time_taken=round((tic-toc), 1)
+       
+        self.done(f"Done in {time_taken} seconds!!")  
 
-        for import_file_path in import_file_paths:
-            read_file = pd.read_excel(import_file_path, dtype={'MOBILE NO.':str})
+    def executeContactConversionWithMerge(self, file):
+        return self.executeContactConversion(file, True)
 
-            if not convertToCSV(read_file, import_file_path, adamOptions.gender):
+    def executeContactConversion(self, file, merge = False):
+        read_file = pd.read_excel(file, dtype={'MOBILE NO.':str})
+        if merge:
+            result = convertToCSV(read_file, file, adamOptions.gender, 'merge')
+            if result.empty:
                 self.error("Contacts file is corrupt, Please contact ABC System Support for a valid file.")
             else:
-                self.done("Done !!")
-           
+                return result
+        else:
+            if not convertToCSV(read_file, file, adamOptions.gender):
+                self.error("Contacts file is corrupt, Please contact ABC System Support for a valid file.")
             
     def getOrderExcelFile(self):
             global read_file
             
             import_file_paths = filedialog.askopenfilenames(parent=root, title='Choose the order excel file')
 
+            toc = time.time()
 
-            for import_file_path in import_file_paths:
-                read_file = pd.read_excel(import_file_path, header=17, skipfooter=1)
+            pool = Pool(processes = len(import_file_paths))
+            pool.map(self.executeOrderEvaluation, import_file_paths)  
+            pool.close()
+            pool.join()
+
+            tic = time.time()
+            time_taken=round((tic-toc), 1)
+
+            self.done(f"Order Evaluation Done in {time_taken} seconds !!")
+                        
+    def executeOrderEvaluation(self, file):
+        read_file = pd.read_excel(file, header=17, skipfooter=1)
                 
-                temp = pd.read_excel(import_file_path)
+        temp = pd.read_excel(file)
 
-                pharmacy_name = ''
-                try:
-                    pharmacy_name = str(temp.iat[8, 1]).split('FROM : ')[1]
-                except Exception as e:
-                    self.error(e)
-                    print(e)
+        pharmacy_name = ''
+        try:
+            pharmacy_name = str(temp.iat[8, 1]).split('FROM : ')[1]
+        except Exception as e:
+            self.error(e)
+            print(e)
 
-                if not evaluateOrder(import_file_path, read_file, pharmacy_name):
-                    err = f'"The excel file for {pharmacy_name} is corrupt, please contact ABC System Support for a valid file!"'
-                    self.error(err)    
-                else:
-                    self.done("Order Evaluation Done !!")    
+        if not evaluateOrder(file, read_file, pharmacy_name):
+            err = f'"The excel file for {pharmacy_name} is corrupt, please contact ABC System Support for a valid file!"'
+            self.error(err)
 
     def done(self, message):
         messagebox.showinfo("ADAM CO.", message)
@@ -140,6 +180,9 @@ class Tools():
 
     def info(self, inf):
         messagebox.showinfo('ADAM CO.', inf)
+
+    def ask(self, question):
+        return messagebox.askyesno("ADAM CO.", question)
 
     def center(self, win):
         """

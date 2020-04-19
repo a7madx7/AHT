@@ -20,10 +20,11 @@ from random import randrange
 from pathlib import Path
 import os
 
-def convertToCSV (df, file, gender = 'Neutral'):    
-    try:
-        export_file_path = getExportFilePath(file) 
 
+def convertToCSV(df, file, gender = 'Neutral', mode = 'separate'):    
+    try:
+        export_file_path = getContactsExportFilePath(file) 
+        
         # print(df.head())
         if not dropUnnecessaryColumns(df):
             return False
@@ -32,13 +33,25 @@ def convertToCSV (df, file, gender = 'Neutral'):
 
         formatTheName(df)
 
-        # print(df.head())
+        gender = str(gender).upper()
+        if gender != 'NEUTRAL':
+            df = filterCustomers(df, gender)
         
-        exportCustomers(df, export_file_path, gender)
-        return True
+        # print(df.head())
+
+        if mode == 'separate':
+            # if the user wants every branch in a single file.
+            exportCustomers(df, export_file_path, gender)
+            return True
+        else:
+            return df
     except Exception as e:
         print(e)
         return False
+
+def executeMergeToCSV(export_file_path, dfs, gender):
+    finalDf = mergeBranchesAndDropDuplicateCustomers(dfs)
+    exportCustomers(finalDf, export_file_path, gender)
 
 def dropUnnecessaryColumns(df):
     # edit the dataframe here before saving it to csv.
@@ -47,30 +60,41 @@ def dropUnnecessaryColumns(df):
     # drop unnecessary columns from the data frame.
     try:
         df.columns = ["Id", "Gender", "Given Name", "Maiden Name", "Family Name", "Phone 1 - Value", "Receipts", "Amount", "City", "Area", "Street", "Branch", "Language", "Delivery", "Active", "Location", "CARDS", "CREATED AT", "CREATED BY", "MODIFIED AT", "MODIFIED BY", "EXTRA"]
-        df = df.drop(["Receipts", "Amount", "Delivery", "Active", "Id", "CREATED AT", "CREATED BY", "MODIFIED AT", "MODIFIED BY", "CARDS", "EXTRA"], axis=1)
+        df.drop(["Receipts", "Amount", "Delivery", "Active", "Id", "CREATED AT", "CREATED BY", "MODIFIED AT", "MODIFIED BY", "CARDS", "EXTRA"], axis=1, inplace = True)
+        # print(df.head())
+        print('Done dropping columns on first try')
     except:
         try:
             df.columns = ["Id", "Gender", "Given Name", "Maiden Name", "Family Name", "Phone 1 - Value", "Receipts", "Amount", "City", "Area", "Street", "Branch", "Language", "Delivery", "Active", "Location", "CARDS", "CREATED AT", "CREATED BY", "MODIFIED AT", "MODIFIED BY"]
-            df = df.drop(["Receipts", "Amount", "Delivery", "Active", "Id", "CREATED AT", "CREATED BY", "MODIFIED AT", "MODIFIED BY", "CARDS"], axis=1)
+            df.drop(["Receipts", "Amount", "Delivery", "Active", "Id", "CREATED AT", "CREATED BY", "MODIFIED AT", "MODIFIED BY", "CARDS"], axis=1, inplace = True)
+            print('Done dropping columns on second try')
         except:
             try:
                 df.columns = ["Id", "Gender", "Given Name", "Maiden Name", "Family Name", "Phone 1 - Value", "Receipts", "Amount", "City", "Area", "Street", "Branch", "Language", "Delivery", "Active", "Location"]
-                df = df.drop(["Receipts", "Amount", "Delivery", "Active", "Id"], axis=1)
+                df.drop(["Receipts", "Amount", "Delivery", "Active", "Id"], axis=1, inplace = True)
+                print('Done dropping columns on third try')
             except:
                 try:
                     df.columns = ["Id", "Gender", "Given Name", "Maiden Name", "Family Name", "Phone 1 - Value", "Receipts", "Amount", "City", "Area", "Street", "Branch"]
-                    df = df.drop(["Receipts", "Amount", "Id"], axis=1)
+                    df.drop(["Receipts", "Amount", "Id"], axis=1, inplace = True)
+                    print('Done dropping columns on fourth try')
                 except:
                     try:
                         df.columns = ["Id", "Gender", "Given Name", "Maiden Name", "Family Name", "Phone 1 - Value", "Receipts", "Amount", "City", "Area"]
-                        df = df.drop(["Receipts", "Amount", "Id"], axis=1)
+                        df.drop(["Receipts", "Amount", "Id"], axis=1, inplace = True)
+                        print('Done dropping columns on fifth try')
                     except:
                         try:
                             df.columns = ["Id", "Gender", "Given Name", "Maiden Name", "Family Name", "Phone 1 - Value"]
-                            df = df.drop(["Id"], axis=1)
+                            df.drop(["Id"], axis=1, inplace = True)
+                            print('Done dropping columns on sixth try')
                         except:
+                            print('Failed to drop columns')
                             return False
     return True
+
+def mergeBranchesAndDropDuplicateCustomers(dfs):
+    return pd.concat(dfs).drop_duplicates(subset= 'Phone 1 - Value').reset_index(drop=True)
 
 def insertRequiredColumns(df):
     # insert the "phone type" column and assign every value to "Mobile" before each phone number in the data frame.
@@ -117,22 +141,23 @@ def getBranchName(original_filename):
     branch = ''
     try:
         branch = original_filename.split('loyality ph ')[1]
-        print(branch)
         branch = branch.split('.xlsx')[0]
-        print(branch)
-        branch = f'Adam {branch}.csv'
+        branch = f'Adam {branch}'
     except:
-       branch = 'default.csv'
+       branch = 'Default'
 
     return branch
 
-def getExportFilePath(file):
+def getContactsExportFilePath(file, merge = False):
     try:
         file_name =  getFileId()
-        file_name = f'{file_name}=={getBranchName(file)}'
+        if merge:
+            file_name = f'Merged Contacts-{file_name}.csv'
+        else:
+            file_name = f'{getBranchName(file)} Contacts-{file_name}.csv'
         _dir = Path(os.path.dirname(file)) ## directory of file
-        export_file_path = _dir / str("Google Contacts " + file_name)
+        export_file_path = _dir / str(file_name)
         return export_file_path
     except Exception as e:
         print(e)
-        return e
+        return e    
